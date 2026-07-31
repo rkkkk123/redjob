@@ -3,9 +3,10 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-top: var(--spacing-8);
-  margin-bottom: var(--spacing-16);
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-12);
   position: relative;
+  width: 100%;
 }
 
 .hero-eyebrow {
@@ -32,7 +33,7 @@
   font-size: 19px;
   color: var(--text-secondary);
   max-width: 680px;
-  margin-bottom: var(--spacing-8);
+  margin-bottom: var(--spacing-6);
   line-height: 1.5;
   animation: slideUpFade 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
 }
@@ -54,6 +55,8 @@
   margin-bottom: var(--spacing-4);
   background: var(--surface);
   border: 1px solid var(--border);
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .mode-tab {
@@ -69,6 +72,7 @@
   border: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .mode-tab:hover {
@@ -117,7 +121,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 24px;
+  padding: 20px;
   min-height: 180px;
   justify-content: center;
 }
@@ -175,6 +179,7 @@
   display: flex;
   gap: 8px;
   pointer-events: auto;
+  flex-wrap: wrap;
 }
 
 .hero-attachment-pill {
@@ -247,15 +252,19 @@
 .hero-presets {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: var(--spacing-6);
+  width: 100%;
 }
 
 .preset-label {
   font-size: 12px;
   color: var(--text-tertiary);
   font-weight: 500;
+  width: 100%;
+  margin-bottom: 2px;
 }
 
 .preset-btn {
@@ -319,5 +328,40 @@
   }
   .hero-subtext {
     font-size: 15px;
+  }
+  .hero-mode-tabs {
+    border-radius: 16px;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .mode-tab {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-headline {
+    font-size: 32px;
+  }
+  .hero-subtext {
+    font-size: 14px;
+  }
+  .hero-textarea {
+    font-size: 14px;
+    padding: 12px;
+    padding-bottom: 70px;
+  }
+  .hero-attachment-toolbar {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 0 0 20px 20px;
+  }
+  .hero-attachment-name {
+    max-width: 90px;
   }
 }

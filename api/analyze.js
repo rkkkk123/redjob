@@ -15,28 +15,44 @@ function cleanAndParseJSON(rawStr) {
 }
 
 async function callGeminiAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-  const parts = [];
-  if (userPrompt) parts.push({ text: userPrompt });
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
+  let lastErr = null;
 
-  if (imageBase64) {
-    const match = imageBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
-    if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+  for (const modelName of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const parts = [];
+      if (userPrompt) parts.push({ text: userPrompt });
+
+      if (imageBase64) {
+        const match = imageBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
+        if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Gemini (${modelName}) HTTP ${response.status}: ${errText.slice(0, 100)}`);
+      }
+
+      const data = await response.json();
+      return cleanAndParseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+    } catch (err) {
+      console.warn(`[VERCEL GEMINI FAILED] ${modelName}:`, err.message);
+      lastErr = err;
+    }
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts }],
-      generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
-    })
-  });
-
-  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}`);
-  const data = await response.json();
-  return cleanAndParseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+  throw lastErr || new Error('All Gemini models failed');
 }
 
 async function callNvidiaNimAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
@@ -127,7 +143,7 @@ export default async function handler(req, res) {
 
     // Strategy 1: Gemini
     const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey && geminiKey.trim().length > 5) {
+    if (geminiKey && geminiKey.trim().length > 3) {
       try {
         aiResult = await callGeminiAPI(systemPrompt, userPrompt, image, geminiKey.trim());
       } catch (geminiErr) {
@@ -153,7 +169,6 @@ export default async function handler(req, res) {
     return res.status(200).json(aiResult);
   } catch (err) {
     console.error('Unhandled Vercel function error:', err);
-    // Even on unhandled error, return heuristic analysis so app never breaks (500)
     const fallback = runHeuristicAudit('Job Analysis', null);
     return res.status(200).json(fallback);
   }

@@ -25,50 +25,61 @@ function cleanAndParseJSON(rawStr) {
   return JSON.parse(cleaned);
 }
 
-// Helper: Call Google Gemini API (gemini-1.5-flash-latest / gemini-2.0-flash)
+// Helper: Call Google Gemini API (tries gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash-8b)
 async function callGeminiAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
-  const modelName = 'gemini-1.5-flash-latest';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
+  let lastErr = null;
 
-  const parts = [];
+  for (const modelName of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const parts = [];
 
-  if (userPrompt) {
-    parts.push({ text: userPrompt });
-  }
+      if (userPrompt) parts.push({ text: userPrompt });
 
-  if (imageBase64) {
-    const match = imageBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
-    if (match) {
-      parts.push({
-        inlineData: {
-          mimeType: match[1],
-          data: match[2]
+      if (imageBase64) {
+        const match = imageBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
+        if (match) {
+          parts.push({
+            inlineData: {
+              mimeType: match[1],
+              data: match[2]
+            }
+          });
         }
+      }
+
+      console.log(`[GEMINI API] Attempting model: ${modelName}...`);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.2
+          }
+        })
       });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Google Gemini (${modelName}) HTTP ${response.status}: ${errText.slice(0, 150)}`);
+      }
+
+      const data = await response.json();
+      const rawJsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parsed = cleanAndParseJSON(rawJsonStr);
+      console.log(`[GEMINI API SUCCESS] Model ${modelName} returned valid JSON audit!`);
+      return parsed;
+    } catch (err) {
+      console.warn(`[GEMINI API ATTEMPT FAILED] ${modelName}:`, err.message);
+      lastErr = err;
     }
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.2
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Google Gemini HTTP ${response.status}: ${errText.slice(0, 200)}`);
-  }
-
-  const data = await response.json();
-  const rawJsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return cleanAndParseJSON(rawJsonStr);
+  throw lastErr || new Error('All Gemini models failed');
 }
 
 // Helper: Call NVIDIA NIM API
@@ -282,81 +293,16 @@ app.post('/api/analyze', async (req, res) => {
       return res.status(400).json({ error: 'Job description or image is required.' });
     }
 
-    const systemPrompt = `You are an executive-tier corporate culture auditor, job description analyst, labor economist, and career strategy advisor.
-Analyze the provided job description (and optional candidate resume) to return a high-class, executive analysis report with numerical benchmarking metrics.
-
-Return EXACTLY a valid JSON object matching this structure and NO extra text:
-{
-  "roleTitle": "<Job Title>",
-  "companyName": "<Company Name or 'Target Company'>",
-  "score": <number 0-100, where higher is healthier>,
-  "summary": "<2-3 sentence candid executive summary of role reality>",
-  "flags": [
-    {
-      "severity": "<red or amber>",
-      "quote": "<exact quote from description>",
-      "reason": "<why this is a red/amber flag>",
-      "question": "<tough interview question candidate should ask>"
-    }
-  ],
-  "signals": [
-    {
-      "quote": "<positive quote>",
-      "reason": "<why this is a green flag>"
-    }
-  ],
-  "hiringMetrics": {
-    "applicantCompetition": "<e.g., 'High (150+ applicants)'>",
-    "hiringVelocityDays": <number of days average to hire, e.g. 21>,
-    "competitionIndex": <number 0-100>,
-    "demandScore": <number 0-100>
-  },
-  "compensationComparison": {
-    "roleBase": <number e.g. 120000>,
-    "marketAvg": <number e.g. 105000>,
-    "topPercentile": <number e.g. 150000>,
-    "entryLevel": <number e.g. 75000>,
-    "currency": "$"
-  },
-  "futureProofIndex": {
-    "longevityScore": <number 0-100 representing 5-year role stability>,
-    "aiAutomationRisk": <number 0-100 representing AI replacement risk>,
-    "growthTrajectory": "<projected 5-year growth e.g., '+18% Industry Growth'>",
-    "futureSkillsToLearn": ["<skill1>", "<skill2>", "<skill3>"]
-  },
-  "resumeFit": {
-    "matchScore": <number 0-100 or null>,
-    "summary": "<summary of resume match>",
-    "matchingSkills": ["<skill1>", "<skill2>"],
-    "missingSkills": ["<missing skill>"],
-    "recommendations": ["<advice to improve resume>"]
-  },
-  "salaryInsights": {
-    "estimatedRange": "<estimated salary range>",
-    "negotiationTip": "<negotiation tip>",
-    "emailScript": "<email draft template to negotiate salary>"
-  },
-  "interviewStrategy": [
-    {
-      "topic": "<topic>",
-      "suggestedQuestion": "<question>",
-      "whatToLookFor": "<what to listen for>"
-    }
-  ]
-}`;
-
-    let userPrompt = `Job Posting Description:\n${jobDescription || ''}`;
-    if (resumeText) {
-      userPrompt += `\n\nCandidate Resume:\n${resumeText}`;
-    }
+    const systemPrompt = `You are an executive corporate culture auditor. Analyze the job description and return JSON format with roleTitle, companyName, score, summary, flags, signals, hiringMetrics, compensationComparison, futureProofIndex, resumeFit, salaryInsights, interviewStrategy.`;
+    const userPrompt = `Job Description:\n${jobDescription || ''}\nResume:\n${resumeText || ''}`;
 
     let aiResult = null;
 
     // Strategy 1: Try Gemini API if key is set
     const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey && geminiKey.trim().length > 5) {
+    if (geminiKey && geminiKey.trim().length > 3) {
       try {
-        console.log('[AI DISPATCH] Attempting analysis via Google Gemini API (gemini-1.5-flash-latest)...');
+        console.log('[AI DISPATCH] Attempting analysis via Google Gemini API...');
         aiResult = await callGeminiAPI(systemPrompt, userPrompt, image, geminiKey.trim());
         console.log('[AI DISPATCH] Google Gemini API succeeded!');
       } catch (geminiError) {

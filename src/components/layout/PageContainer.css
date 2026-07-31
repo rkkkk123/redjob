@@ -1,15 +1,17 @@
 .page-container {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: calc(64px + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+  padding: calc(64px + var(--spacing-8)) var(--spacing-4) var(--spacing-12);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 640px) {
   .page-container {
-    padding-left: var(--spacing-3);
-    padding-right: var(--spacing-3);
+    padding-top: calc(64px + 16px);
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 32px;
   }
 }
