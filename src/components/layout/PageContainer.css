@@ -1,0 +1,15 @@
+.page-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: calc(64px + var(--spacing-12)) var(--spacing-4) var(--spacing-12);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 720px) {
+  .page-container {
+    padding-left: var(--spacing-3);
+    padding-right: var(--spacing-3);
+  }
+}

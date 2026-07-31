@@ -1,0 +1,115 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  z-index: 100;
+  border-bottom: 1px solid var(--border-light);
+  transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .navbar {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.navbar-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-4);
+}
+
+@media (max-width: 720px) {
+  .navbar-container {
+    padding: 0 var(--spacing-3);
+  }
+}
+
+.navbar-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.navbar-link {
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-link:hover, .navbar-link.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.user-email-text {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.logout-icon-btn:hover {
+  color: var(--semantic-red);
+}
+
+.navbar-cta {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  background-color: var(--brand-accent);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 100px;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.navbar-cta:hover {
+  background-color: var(--brand-accent-hover);
+}
+
+.navbar-cta:active {
+  transform: scale(0.98);
+}

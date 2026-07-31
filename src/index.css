@@ -1,0 +1,212 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Apple-like Light Mode Colors */
+  --surface: #ffffff; /* Pure white */
+  --surface-secondary: #f5f5f7; /* Very subtle gray */
+  --surface-dark: #000000;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(255, 255, 255, 0.1);
+  --text-primary: #1d1d1f; /* Almost black */
+  --text-secondary: #86868b;
+  --text-tertiary: #a1a1a6;
+  
+  --brand-accent: #0071e3; /* Apple Blue, wait, maybe we keep Red Job brand */
+  --brand-accent: #ff3b30; /* Apple Red */
+  --brand-accent-hover: #ff453a;
+  --logo-red: #ff3b30; 
+  
+  /* Semantics */
+  --semantic-red: #ff3b30;
+  --semantic-red-bg: rgba(255, 59, 48, 0.1);
+  --semantic-amber: #ff9f0a;
+  --semantic-amber-bg: rgba(255, 159, 10, 0.1);
+  --semantic-green: #34c759;
+  --semantic-green-bg: rgba(52, 199, 89, 0.1);
+  
+  /* Typography */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Spacing */
+  --spacing-1: 8px;
+  --spacing-2: 16px;
+  --spacing-3: 24px;
+  --spacing-4: 32px;
+  --spacing-6: 48px;
+  --spacing-8: 64px;
+  --spacing-12: 96px;
+  --spacing-16: 128px;
+  
+  /* Layout */
+  --max-width: 1024px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Apple-like Dark Mode */
+    --surface: #000000; /* Pure black */
+    --surface-secondary: #1c1c1e; /* Deep gray */
+    --border: rgba(255, 255, 255, 0.15);
+    --border-light: rgba(255, 255, 255, 0.08);
+    --text-primary: #f5f5f7; /* Off white */
+    --text-secondary: #86868b;
+    --text-tertiary: #6e6e73;
+    
+    --brand-accent: #ff453a;
+    --brand-accent-hover: #ff574d;
+    
+    --semantic-red: #ff453a;
+    --semantic-red-bg: rgba(255, 69, 58, 0.15);
+    --semantic-amber: #ffd60a;
+    --semantic-amber-bg: rgba(255, 214, 10, 0.15);
+    --semantic-green: #30d158;
+    --semantic-green-bg: rgba(48, 209, 88, 0.15);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--surface);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Base text styles */
+.text-body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.text-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* --- Apple-Grade UI Utilities --- */
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+}
+
+@media (prefers-color-scheme: light) {
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  }
+}
+
+/* Bento Grid */
+.bento-grid {
+  display: grid;
+  gap: var(--spacing-3);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.bento-item {
+  border-radius: 24px;
+  padding: var(--spacing-4);
+  background: var(--surface-secondary);
+  border: 1px solid var(--border);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bento-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradient Glowing Orbs Background */
+.gradient-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255, 59, 48, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  animation: floatOrb 10s ease-in-out infinite alternate;
+}
+
+@media (prefers-color-scheme: light) {
+  .gradient-glow {
+    background: radial-gradient(circle, rgba(255, 59, 48, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+  }
+}
+
+/* --- Animations (Spring Physics based) --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatOrb {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(30px, -30px) scale(1.1); }
+}
+
+.animate-stagger-1 { animation: slideUpFade 600ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both; }
+.animate-stagger-2 { animation: slideUpFade 600ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both; }
+.animate-stagger-3 { animation: slideUpFade 600ms cubic-bezier(0.16, 1, 0.3, 1) 300ms both; }
+.animate-stagger-4 { animation: slideUpFade 600ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both; }
+
+*:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+html { scroll-behavior: smooth; }

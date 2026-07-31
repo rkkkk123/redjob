@@ -1,0 +1,123 @@
+.developers-page {
+  padding: var(--spacing-12) var(--spacing-4);
+  max-width: var(--max-width);
+  margin: 0 auto;
+  position: relative;
+  min-height: 100vh;
+}
+
+.blue-glow {
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.15) 0%, rgba(0, 0, 0, 0) 70%) !important;
+  right: 0;
+  top: 10%;
+}
+
+.dev-header {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.dev-title {
+  font-size: 48px;
+  line-height: 1.1;
+  margin-bottom: var(--spacing-4);
+}
+
+.dev-subtitle {
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+  font-size: 20px;
+}
+
+/* Terminal UI */
+.terminal-container {
+  max-width: 800px;
+  margin: 0 auto var(--spacing-8) auto;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+}
+
+@media (prefers-color-scheme: light) {
+  .terminal-container {
+    background: #1e1e1e;
+    color: #f5f5f7;
+  }
+}
+
+.terminal-header {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.window-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.control {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.control.close { background: #ff5f56; }
+.control.minimize { background: #ffbd2e; }
+.control.maximize { background: #27c93f; }
+
+.window-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: -44px; /* Offset the controls to center text */
+}
+
+.terminal-body {
+  padding: var(--spacing-4);
+  overflow-x: auto;
+}
+
+.terminal-body pre {
+  margin: 0;
+}
+
+.terminal-body code {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e6e6e6;
+  white-space: pre;
+}
+
+/* Bento Cards */
+.dev-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  margin-bottom: var(--spacing-2);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.green { background: var(--semantic-green); }
+.dot.blue { background: #0071e3; }
+.dot.amber { background: var(--semantic-amber); }
+
+@media (max-width: 768px) {
+  .dev-title { font-size: 36px; }
+  .terminal-body code { font-size: 12px; }
+}

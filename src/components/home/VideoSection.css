@@ -1,0 +1,68 @@
+.video-section {
+  position: relative;
+  width: 100vw;
+  height: 50vh;
+  min-height: 400px;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-top: var(--spacing-16);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  z-index: 1;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(28, 27, 25, 0.4);
+  z-index: 2;
+}
+
+.video-content {
+  position: relative;
+  z-index: 3;
+  padding: var(--spacing-4);
+  text-align: center;
+}
+
+.glass-text {
+  font-family: var(--font-display);
+  font-size: 48px;
+  color: white;
+  margin: 0;
+  
+  /* Subtle shadow to ensure text pops off the video without a container */
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  
+  /* Ensuring the text is sharp and beautiful */
+  line-height: 1.2;
+  max-width: 800px;
+}
+
+@media (max-width: 768px) {
+  .video-section {
+    height: 40vh;
+    min-height: 300px;
+  }
+  
+  .glass-text {
+    font-size: 32px;
+  }
+}

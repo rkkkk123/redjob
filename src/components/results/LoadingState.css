@@ -1,0 +1,124 @@
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  animation: fadeIn 500ms ease-out;
+  margin-top: var(--spacing-6);
+  padding: var(--spacing-8) 0;
+}
+
+.scanner-container {
+  width: 100%;
+  max-width: 500px;
+  height: 240px;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: var(--spacing-6);
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.02);
+}
+
+.wireframe-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0.4;
+}
+
+.wireframe-line {
+  height: 8px;
+  background: var(--text-tertiary);
+  border-radius: 4px;
+}
+
+.wireframe-line.header {
+  height: 16px;
+  width: 40%;
+  margin-bottom: 8px;
+}
+
+.wireframe-line.sub {
+  height: 12px;
+  width: 60%;
+  margin-bottom: 4px;
+}
+
+/* The laser line */
+.scanner-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--brand-accent);
+  box-shadow: 0 0 12px 2px var(--brand-accent);
+  animation: scan 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  z-index: 10;
+}
+
+/* A gradient glow behind the laser */
+.scanner-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, rgba(122, 116, 212, 0.15) 100%);
+  animation: scan-glow 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  transform: translateY(-100%);
+  z-index: 9;
+}
+
+@keyframes scan {
+  0% { top: 5%; }
+  100% { top: 95%; }
+}
+
+@keyframes scan-glow {
+  0% { top: 5%; }
+  100% { top: 95%; }
+}
+
+.loading-phrase-container {
+  position: relative;
+  height: 32px;
+  margin-top: var(--spacing-8);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--brand-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-phrase {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--brand-accent);
+  opacity: 0;
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+  margin-left: 14px; /* Offset to make room for spinner when centered visually */
+}
+
+.loading-phrase.active {
+  opacity: 1;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
