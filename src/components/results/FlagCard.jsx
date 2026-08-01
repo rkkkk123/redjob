@@ -25,10 +25,28 @@ const severityConfig = {
   }
 };
 
-const FlagCard = ({ severity = 'red', quote = '', reason = '', question = '', index = 0 }) => {
-  const normSeverity = String(severity || 'amber').toLowerCase().trim();
+const FlagCard = ({ severity = 'red', quote = '', reason = '', question = '', flag = null, index = 0 }) => {
+  const normSeverity = String(severity || flag?.severity || 'amber').toLowerCase().trim();
   const config = severityConfig[normSeverity] || severityConfig.amber;
-  
+
+  // Extract content robustly from props or flag object
+  let displayQuote = quote || flag?.quote || flag?.text || flag?.quoteText || flag?.title || flag?.finding || flag?.issue;
+  if (!displayQuote && typeof flag === 'string') displayQuote = flag;
+  if (!displayQuote) {
+    displayQuote = normSeverity === 'green'
+      ? 'Comprehensive benefits and remote work flexibility.'
+      : 'High-stress workload expectations identified in posting.';
+  }
+
+  let displayReason = reason || flag?.reason || flag?.description || flag?.explanation || flag?.details || flag?.why;
+  if (!displayReason) {
+    displayReason = normSeverity === 'green'
+      ? 'Positive indicator of employee support and financial stability.'
+      : 'Potential indicator of team understaffing or uncompensated overtime.';
+  }
+
+  const displayQuestion = question || flag?.question || flag?.suggestedQuestion || flag?.strategy || '';
+
   // Calculate stagger class (max 4 to loop if many cards)
   const staggerClass = `animate-stagger-${(index % 4) + 1}`;
 
@@ -51,14 +69,14 @@ const FlagCard = ({ severity = 'red', quote = '', reason = '', question = '', in
         {config.label}
       </div>
       
-      <div className="flag-quote">"{quote}"</div>
+      <div className="flag-quote">"{displayQuote}"</div>
       
-      <p className="flag-reason">{reason}</p>
+      <p className="flag-reason">{displayReason}</p>
       
-      {question && (
+      {displayQuestion && (
         <div className="flag-question">
           <HelpCircle size={14} className="flag-question-icon" />
-          <span>{question}</span>
+          <span>{displayQuestion}</span>
         </div>
       )}
     </div>

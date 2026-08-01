@@ -115,6 +115,7 @@ const ResultsView = ({ results, onReset }) => {
             {results.flags && results.flags.map((flag, index) => (
               <div className="bento-item flag-bento" key={index} style={{ animationDelay: `${(index + 1) * 100}ms` }}>
                 <FlagCard 
+                  flag={flag}
                   severity={flag.severity}
                   quote={flag.quote}
                   reason={flag.reason}
@@ -127,6 +128,7 @@ const ResultsView = ({ results, onReset }) => {
             {results.signals && results.signals.map((signal, index) => (
               <div className="bento-item signal-bento" key={`signal-${index}`} style={{ animationDelay: `${((results.flags?.length || 0) + index + 1) * 100}ms` }}>
                 <FlagCard 
+                  flag={signal}
                   severity="green"
                   quote={signal.quote}
                   reason={signal.reason}
@@ -154,7 +156,11 @@ const ResultsView = ({ results, onReset }) => {
 
       {/* Tab 4: Interview Strategy */}
       {activeTab === 'interview' && (
-        <InterviewStrategyView strategies={results.interviewStrategy || results.flags?.map(f => ({ topic: f.quote, suggestedQuestion: f.question }))} />
+        <InterviewStrategyView 
+          strategies={results.interviewStrategy}
+          roadmap={results.interviewRoadmap}
+          flags={results.flags}
+        />
       )}
 
       {/* Tab 5: Salary & Negotiation */}

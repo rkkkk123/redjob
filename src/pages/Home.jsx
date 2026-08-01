@@ -75,9 +75,13 @@ const getHash = (str) => {
   return hash.toString(36);
 };
 
+import DancingRobotWidget from '../components/chat/DancingRobotWidget';
+import CareerChatCanvas from '../components/chat/CareerChatCanvas';
+
 const Home = () => {
   const [appState, setAppState] = useState('idle'); // idle, loading, results
   const [resultsData, setResultsData] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleAnalyze = async (payload) => {
     setAppState('loading');
@@ -161,6 +165,15 @@ const Home = () => {
           <ResultsView results={resultsData || mockResults} onReset={() => setAppState('idle')} />
         </div>
       )}
+
+      {/* Dancing AI Robot Widget */}
+      <DancingRobotWidget onOpenChat={() => setIsChatOpen(true)} />
+
+      {/* Full Canvas AI Career Assistant Modal */}
+      <CareerChatCanvas 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   );
 };

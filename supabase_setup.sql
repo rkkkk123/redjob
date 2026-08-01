@@ -30,8 +30,12 @@ CREATE TABLE IF NOT EXISTS public.job_scans (
   flags JSONB DEFAULT '[]'::jsonb,
   signals JSONB DEFAULT '[]'::jsonb,
   resume_match_score INT,
+  full_data JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure full_data column exists on pre-existing tables
+ALTER TABLE public.job_scans ADD COLUMN IF NOT EXISTS full_data JSONB DEFAULT '{}'::jsonb;
 
 -- 4. CREATE INDEXES FOR FAST QUERYING
 CREATE INDEX IF NOT EXISTS idx_job_scans_user_id ON public.job_scans(user_id);

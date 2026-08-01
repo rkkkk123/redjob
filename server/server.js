@@ -227,6 +227,56 @@ function runHeuristicAudit(jobDescription, resumeText) {
   };
 }
 
+// Endpoint: RedJob AI Robot Career Chat (Powered by Mistral AI)
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { messages = [], documentText = null, imageBase64 = null } = req.body;
+    const lastUserMsg = messages?.filter(m => m.role === 'user').pop()?.content || '';
+
+    const systemPrompt = `You are RedJob AI Robot, a world-class executive career coach and culture risk analyst. Provide friendly, actionable, concise advice with emojis, markdown formatting, bullet points, and high-impact career strategies.`;
+    const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+
+    if (mistralKey && mistralKey.trim().length > 3) {
+      try {
+        const modelToUse = imageBase64 ? "pixtral-12b-2409" : "mistral-medium-latest";
+        const formattedMessages = [{ role: "system", content: systemPrompt }];
+        if (documentText) formattedMessages.push({ role: "system", content: `Document:\n${documentText}` });
+        messages.forEach(m => { if (m.role && m.content) formattedMessages.push({ role: m.role, content: m.content }); });
+
+        const mRes = await fetch("https://api.mistral.ai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${mistralKey.trim()}` },
+          body: JSON.stringify({ model: modelToUse, messages: formattedMessages, temperature: 0.3, max_tokens: 1500 })
+        });
+
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          const reply = mData.choices?.[0]?.message?.content;
+          if (reply) return res.json({ reply, modelUsed: 'mistral-medium-latest' });
+        }
+      } catch (err) {
+        console.warn('[SERVER MISTRAL CHAT FAILED]:', err.message);
+      }
+    }
+
+    return res.json({
+      reply: `🤖 **Hi! I am RedJob AI Robot** — your executive career consultant!
+      
+I can help you:
+1. **Analyze & Audit Job Descriptions** for hidden red flags.
+2. **Optimize your Resume & ATS Match Score**.
+3. **Prepare a Step-by-Step Planned Interview Roadmap**.
+4. **Draft High-Leverage Salary Negotiation Scripts**.
+
+Ask me any career question or upload a document/screenshot below!`,
+      modelUsed: 'redjob-robot-v1'
+    });
+  } catch (error) {
+    console.error('[CHAT ERROR]:', error);
+    res.status(500).json({ error: 'Chat processing failed' });
+  }
+});
+
 // Endpoint: Scrape Job URL
 app.post('/api/scrape-url', async (req, res) => {
   try {

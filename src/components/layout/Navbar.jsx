@@ -33,7 +33,9 @@ const Navbar = () => {
 
               <div className="user-profile-badge">
                 <User size={14} />
-                <span className="user-email-text">{user.email || user.name}</span>
+                <span className="user-email-text">
+                  {user.user_metadata?.full_name || user.name || user.email}
+                </span>
                 <button className="logout-icon-btn" onClick={logout} title="Sign Out">
                   <LogOut size={14} />
                 </button>

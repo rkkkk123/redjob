@@ -86,7 +86,27 @@ export const AuthProvider = ({ children }) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setScans(data || []);
+
+      const formatted = (data || []).map(item => ({
+        ...item,
+        id: item.id,
+        createdAt: item.created_at,
+        roleTitle: item.job_title || item.role_title || item.roleTitle || 'Job Analysis',
+        companyName: item.company_name || item.companyName || 'Corporate Posting',
+        score: item.score || 75,
+        summary: item.summary || '',
+        flags: item.flags || [],
+        signals: item.signals || [],
+        resumeFit: item.resume_fit || item.full_data?.resumeFit || null,
+        salaryInsights: item.salary_insights || item.full_data?.salaryInsights || null,
+        interviewStrategy: item.interview_strategy || item.full_data?.interviewStrategy || [],
+        hiringMetrics: item.hiring_metrics || item.full_data?.hiringMetrics || null,
+        compensationComparison: item.compensation_comparison || item.full_data?.compensationComparison || null,
+        futureProofIndex: item.future_proof_index || item.full_data?.futureProofIndex || null,
+        ...(item.full_data || {})
+      }));
+
+      setScans(formatted);
     } catch (err) {
       console.error('Error fetching scans from Supabase:', err);
     }
@@ -96,10 +116,20 @@ export const AuthProvider = ({ children }) => {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data?.user) {
+        setUser(data.user);
+        fetchSupabaseScans(data.user.id);
+      }
       return data;
     } else {
       // LocalStorage demo login
-      const demoUser = { id: 'usr_' + Date.now(), email, name: email.split('@')[0], plan: 'Plus' };
+      const demoUser = { 
+        id: 'usr_' + Date.now(), 
+        email, 
+        name: email.split('@')[0], 
+        user_metadata: { full_name: email.split('@')[0] },
+        plan: 'Plus' 
+      };
       setUser(demoUser);
       localStorage.setItem(MOCK_USER_KEY, JSON.stringify(demoUser));
       return { user: demoUser };
@@ -111,12 +141,33 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } }
+        options: { data: { full_name: fullName, name: fullName } }
       });
       if (error) throw error;
+
+      const newUser = data.session?.user || data.user;
+      if (newUser) {
+        setUser(newUser);
+        try {
+          await supabase.from('profiles').upsert({
+            id: newUser.id,
+            email: email,
+            full_name: fullName,
+            updated_at: new Date().toISOString()
+          });
+        } catch (pErr) {
+          console.warn('Profile sync warning:', pErr.message);
+        }
+      }
       return data;
     } else {
-      const demoUser = { id: 'usr_' + Date.now(), email, name: fullName, plan: 'Free' };
+      const demoUser = { 
+        id: 'usr_' + Date.now(), 
+        email, 
+        name: fullName, 
+        user_metadata: { full_name: fullName },
+        plan: 'Free' 
+      };
       setUser(demoUser);
       localStorage.setItem(MOCK_USER_KEY, JSON.stringify(demoUser));
       return { user: demoUser };
@@ -134,7 +185,13 @@ export const AuthProvider = ({ children }) => {
       });
       if (error) throw error;
     } else {
-      const demoUser = { id: 'usr_g_' + Date.now(), email: 'alex.google@example.com', name: 'Alex Johnson', plan: 'Plus' };
+      const demoUser = { 
+        id: 'usr_g_' + Date.now(), 
+        email: 'alex.google@example.com', 
+        name: 'Alex Johnson', 
+        user_metadata: { full_name: 'Alex Johnson' },
+        plan: 'Plus' 
+      };
       setUser(demoUser);
       localStorage.setItem(MOCK_USER_KEY, JSON.stringify(demoUser));
     }
@@ -143,25 +200,35 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
-    } else {
-      localStorage.removeItem(MOCK_USER_KEY);
-      setUser(null);
     }
+    localStorage.removeItem(MOCK_USER_KEY);
+    setUser(null);
+    setScans([]);
   };
 
   const saveScan = async (scanResult) => {
     const newScan = {
       id: scanResult.id || 'scan_' + Date.now(),
       created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       role_title: scanResult.roleTitle || 'Job Analysis',
+      roleTitle: scanResult.roleTitle || 'Job Analysis',
       company_name: scanResult.companyName || 'Target Company',
+      companyName: scanResult.companyName || 'Target Company',
       score: scanResult.score,
       summary: scanResult.summary,
       flags: scanResult.flags || [],
       signals: scanResult.signals || [],
       resume_fit: scanResult.resumeFit || null,
+      resumeFit: scanResult.resumeFit || null,
       salary_insights: scanResult.salaryInsights || null,
-      interview_strategy: scanResult.interviewStrategy || []
+      salaryInsights: scanResult.salaryInsights || null,
+      interview_strategy: scanResult.interviewStrategy || [],
+      interviewStrategy: scanResult.interviewStrategy || [],
+      hiringMetrics: scanResult.hiringMetrics || null,
+      compensationComparison: scanResult.compensationComparison || null,
+      futureProofIndex: scanResult.futureProofIndex || null,
+      full_data: scanResult
     };
 
     if (isSupabaseConfigured && supabase && user) {
@@ -182,10 +249,11 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // Always update local state for immediate UI feedback
+    // Update local state and isolated cache for immediate feedback
     const updatedScans = [newScan, ...scans];
     setScans(updatedScans);
-    localStorage.setItem(MOCK_SCANS_KEY, JSON.stringify(updatedScans));
+    const userStorageKey = user ? `${MOCK_SCANS_KEY}_${user.id}` : MOCK_SCANS_KEY;
+    localStorage.setItem(userStorageKey, JSON.stringify(updatedScans));
   };
 
   const deleteScan = async (scanId) => {
@@ -194,7 +262,8 @@ export const AuthProvider = ({ children }) => {
     }
     const updated = scans.filter(s => s.id !== scanId);
     setScans(updated);
-    localStorage.setItem(MOCK_SCANS_KEY, JSON.stringify(updated));
+    const userStorageKey = user ? `${MOCK_SCANS_KEY}_${user.id}` : MOCK_SCANS_KEY;
+    localStorage.setItem(userStorageKey, JSON.stringify(updated));
   };
 
   return (

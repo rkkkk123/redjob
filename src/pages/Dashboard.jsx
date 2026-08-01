@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ScanDetailModal from '../components/modals/ScanDetailModal';
-import { ChevronRight, Trash2, Calendar, ShieldCheck, FileText, Eye } from 'lucide-react';
+import DancingRobotWidget from '../components/chat/DancingRobotWidget';
+import CareerChatCanvas from '../components/chat/CareerChatCanvas';
+import { ChevronRight, Trash2, Calendar, ShieldCheck, FileText, Eye, Bot } from 'lucide-react';
 import './Dashboard.css';
 
 const getScoreColor = (score) => {
@@ -14,21 +16,26 @@ const Dashboard = () => {
   const { scans, deleteScan, user } = useAuth();
   const [selectedScan, setSelectedScan] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleOpenScan = (scan) => {
     setSelectedScan(scan);
     setIsModalOpen(true);
   };
 
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.name || (user?.email ? user.email.split('@')[0] : null);
+
   return (
     <div className="dashboard-view animate-stagger-1">
-      <div className="dashboard-header">
+      <div className="dashboard-header glass-panel" style={{ padding: '24px 30px', borderRadius: '16px', marginBottom: '24px' }}>
         <div>
-          <h1 className="dashboard-title">Your Audit History</h1>
-          <div className="dashboard-meta">
-            {scans.length} {scans.length === 1 ? 'job description' : 'job descriptions'} analyzed
-            {user ? ` • Logged in as ${user.email}` : ' • Local session'}
-          </div>
+          <h1 className="dashboard-title">
+            {userName ? `Welcome back, ${userName}!` : 'Your Audit History'}
+          </h1>
+          <p className="dashboard-meta" style={{ marginTop: '4px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            {scans.length} {scans.length === 1 ? 'audit report' : 'audit reports'} saved in your executive history.
+            {user?.email && ` • ${user.email}`}
+          </p>
         </div>
       </div>
 
@@ -102,6 +109,15 @@ const Dashboard = () => {
         scan={selectedScan}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      {/* Dancing AI Robot Widget */}
+      <DancingRobotWidget onOpenChat={() => setIsChatOpen(true)} />
+
+      {/* Full Canvas AI Career Assistant Modal */}
+      <CareerChatCanvas 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
       />
     </div>
   );

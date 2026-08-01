@@ -14,66 +14,36 @@ function cleanAndParseJSON(rawStr) {
   return JSON.parse(cleaned);
 }
 
-async function callGeminiAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
-  const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
-  let lastErr = null;
+async function callMistralAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
+  const modelToUse = imageBase64 ? "pixtral-12b-2409" : "mistral-medium-latest";
+  const url = "https://api.mistral.ai/v1/chat/completions";
 
-  for (const modelName of modelsToTry) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-      const parts = [];
-      if (userPrompt) parts.push({ text: userPrompt });
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt }
+  ];
 
-      if (imageBase64) {
-        const match = imageBase64.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
-        if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
-        })
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini (${modelName}) HTTP ${response.status}: ${errText.slice(0, 100)}`);
-      }
-
-      const data = await response.json();
-      return cleanAndParseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
-    } catch (err) {
-      console.warn(`[VERCEL GEMINI FAILED] ${modelName}:`, err.message);
-      lastErr = err;
-    }
-  }
-
-  throw lastErr || new Error('All Gemini models failed');
-}
-
-async function callNvidiaNimAPI(systemPrompt, userPrompt, imageBase64, apiKey) {
-  const openai = new OpenAI({ apiKey, baseURL: 'https://integrate.api.nvidia.com/v1' });
-  const messages = [{ role: "system", content: systemPrompt }];
-
-  if (imageBase64) {
-    messages.push({ role: "user", content: [{ type: "text", text: userPrompt }, { type: "image_url", image_url: { url: imageBase64 } }] });
-  } else {
-    messages.push({ role: "user", content: userPrompt });
-  }
-
-  const modelToUse = imageBase64 ? "meta/llama-3.2-90b-vision-instruct" : "meta/llama-3.1-70b-instruct";
-  const completion = await openai.chat.completions.create({
-    model: modelToUse,
-    messages,
-    temperature: 0.2,
-    response_format: { type: "json_object" }
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: modelToUse,
+      messages,
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    })
   });
 
-  return cleanAndParseJSON(completion.choices[0].message.content);
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Mistral API HTTP ${response.status}: ${errText.slice(0, 100)}`);
+  }
+
+  const data = await response.json();
+  return cleanAndParseJSON(data.choices?.[0]?.message?.content);
 }
 
 function runHeuristicAudit(jobDescription, resumeText) {
@@ -108,6 +78,40 @@ function runHeuristicAudit(jobDescription, resumeText) {
     futureProofIndex: { longevityScore: 85, aiAutomationRisk: 22, growthTrajectory: "+16% Industry Growth", futureSkillsToLearn: ["System Architecture", "AI Workflows"] },
     resumeFit: resumeText ? { matchScore: 78, summary: "Good alignment.", matchingSkills: ["Engineering", "System Design"], missingSkills: ["Certifications"], recommendations: ["Quantify impact."] } : null,
     salaryInsights: { estimatedRange: "$105,000 - $135,000 / yr", negotiationTip: "Emphasize core technical competencies.", emailScript: "Dear Hiring Manager,\n\nI am targeting a base compensation range of $115,000-$130,000.\n\nBest,\nCandidate" },
+    interviewRoadmap: [
+      {
+        stageNumber: 1,
+        stageTitle: "Stage 1: Recruiter Screening & Initial Alignment",
+        focusArea: "Salary Band & Role Scope Bounds",
+        targetQuestion: "What is the explicit base salary band and working hours expectation for this role?",
+        greenFlagSignal: "Transparent salary range shared immediately ($115k+) with clear remote boundaries.",
+        redFlagWarning: "Vague statements like 'compensation depends on candidate fit' without clear numbers."
+      },
+      {
+        stageNumber: 2,
+        stageTitle: "Stage 2: Technical Competency & Architecture Audit",
+        focusArea: "Code Standards & System Maintenance",
+        targetQuestion: "How does the team balance new feature velocity against technical debt refactoring?",
+        greenFlagSignal: "Dedicated sprint allocations for tech debt and system reliability.",
+        redFlagWarning: "Expectation of continuous feature hacks without refactoring cycles."
+      },
+      {
+        stageNumber: 3,
+        stageTitle: "Stage 3: Culture & Workload Boundary Audit",
+        focusArea: "After-Hours Support & Burnout Defense",
+        targetQuestion: "How are project priorities managed when multiple high-urgency requests collide?",
+        greenFlagSignal: "Structured prioritization frameworks (RICE/MoSCoW) and executive shielding.",
+        redFlagWarning: "Defensive answers such as 'we all do whatever it takes 24/7'."
+      },
+      {
+        stageNumber: 4,
+        stageTitle: "Stage 4: Executive Offer & Compensation Negotiation",
+        focusArea: "Base Salary & KPI Milestones",
+        targetQuestion: "What explicit 90-day KPIs determine performance evaluation and base compensation reviews?",
+        greenFlagSignal: "Clear 30-60-90 day deliverables with written performance metrics.",
+        redFlagWarning: "Unclear bonus criteria or equity promises lacking vesting documentation."
+      }
+    ],
     interviewStrategy: [{ topic: "Workload & Scope", suggestedQuestion: "How are project deadlines managed?", whatToLookFor: "Look for realistic scope boundaries." }]
   };
 }
@@ -127,6 +131,26 @@ function createHashKey(str) {
   return hash.toString(36);
 }
 
+const normalizeFlags = (arr, fallbackArr, defaultSeverity = 'amber') => {
+  if (!Array.isArray(arr) || arr.length === 0) return fallbackArr;
+  return arr.map((item, i) => {
+    if (typeof item === 'string') {
+      return {
+        severity: defaultSeverity,
+        quote: item,
+        reason: 'Workplace expectation specified in job posting.',
+        question: 'What does a typical workweek look like regarding this requirement?'
+      };
+    }
+    return {
+      severity: String(item?.severity || item?.level || defaultSeverity).toLowerCase(),
+      quote: item?.quote || item?.text || item?.title || item?.finding || item?.issue || `Requirement #${i + 1}`,
+      reason: item?.reason || item?.description || item?.explanation || item?.details || 'Identified requirement during role analysis.',
+      question: item?.question || item?.suggestedQuestion || item?.strategy || ''
+    };
+  });
+};
+
 function normalizeAuditResult(rawResult, fallbackText = '') {
   const heuristic = runHeuristicAudit(fallbackText, null);
   if (!rawResult || typeof rawResult !== 'object') return heuristic;
@@ -136,8 +160,8 @@ function normalizeAuditResult(rawResult, fallbackText = '') {
     companyName: rawResult.companyName || heuristic.companyName,
     score: typeof rawResult.score === 'number' ? Math.max(10, Math.min(99, rawResult.score)) : heuristic.score,
     summary: rawResult.summary || heuristic.summary,
-    flags: Array.isArray(rawResult.flags) && rawResult.flags.length > 0 ? rawResult.flags : heuristic.flags,
-    signals: Array.isArray(rawResult.signals) && rawResult.signals.length > 0 ? rawResult.signals : heuristic.signals,
+    flags: normalizeFlags(rawResult.flags, heuristic.flags, 'red'),
+    signals: normalizeFlags(rawResult.signals, heuristic.signals, 'green'),
     hiringMetrics: rawResult.hiringMetrics || heuristic.hiringMetrics,
     compensationComparison: rawResult.compensationComparison || heuristic.compensationComparison,
     futureProofIndex: rawResult.futureProofIndex || heuristic.futureProofIndex,
@@ -185,9 +209,19 @@ export default async function handler(req, res) {
 
     let aiResult = null;
 
-    // Strategy 1: Gemini API
+    // Strategy 1: Mistral AI API (Model: mistral-medium-latest / pixtral-12b)
+    const mistralKey = process.env.MISTRAL_API_KEY || process.env.VITE_MISTRAL_API_KEY;
+    if (mistralKey && mistralKey.trim().length > 3) {
+      try {
+        aiResult = await callMistralAPI(systemPrompt, userPrompt, image, mistralKey.trim());
+      } catch (mistralErr) {
+        console.warn('Mistral API error on Vercel:', mistralErr.message);
+      }
+    }
+
+    // Strategy 2: Gemini API
     const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey && geminiKey.trim().length > 3) {
+    if (!aiResult && geminiKey && geminiKey.trim().length > 3) {
       try {
         aiResult = await callGeminiAPI(systemPrompt, userPrompt, image, geminiKey.trim());
       } catch (geminiErr) {
@@ -195,7 +229,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Strategy 2: NVIDIA NIM API
+    // Strategy 3: NVIDIA NIM API
     const nvidiaKey = process.env.NVIDIA_NIM_API_KEY;
     if (!aiResult && nvidiaKey && nvidiaKey.trim().length > 5) {
       try {
