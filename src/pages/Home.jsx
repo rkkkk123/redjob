@@ -65,6 +65,16 @@ const mockResults = {
   ]
 };
 
+const getHash = (str) => {
+  let hash = 0;
+  if (!str) return '0';
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString(36);
+};
+
 const Home = () => {
   const [appState, setAppState] = useState('idle'); // idle, loading, results
   const [resultsData, setResultsData] = useState(null);
@@ -72,12 +82,30 @@ const Home = () => {
   const handleAnalyze = async (payload) => {
     setAppState('loading');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
+
+    const jobText = typeof payload === 'string' ? payload : (payload.jobDescription || '');
+    const resumeText = payload.resumeText || '';
+    const image = payload.attachedImage || null;
+    const cacheKey = `redjob_cache_${getHash(jobText + '_' + resumeText + '_' + (image ? image.slice(0, 50) : ''))}`;
+
+    // Check Client Session Storage Cache
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setResultsData(parsed);
+        setAppState('results');
+        return;
+      }
+    } catch (e) {
+      console.warn('Session cache read error:', e);
+    }
+
     try {
       const requestBody = {
-        jobDescription: typeof payload === 'string' ? payload : payload.jobDescription,
-        image: payload.attachedImage || null,
-        resumeText: payload.resumeText || null
+        jobDescription: jobText,
+        image,
+        resumeText
       };
 
       const response = await fetch('/api/analyze', {
@@ -89,15 +117,22 @@ const Home = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
       setResultsData(data);
       setAppState('results');
+
+      // Save to client cache
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      } catch (e) {
+        console.warn('Session cache save error:', e);
+      }
     } catch (error) {
       console.error("Error analyzing job:", error);
-      // Fallback to mock data for demonstration if API is offline
+      // Fallback to mock results if API fails
       setResultsData(mockResults);
       setAppState('results');
     }

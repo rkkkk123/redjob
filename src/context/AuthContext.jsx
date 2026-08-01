@@ -125,7 +125,13 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async () => {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
       if (error) throw error;
     } else {
       const demoUser = { id: 'usr_g_' + Date.now(), email: 'alex.google@example.com', name: 'Alex Johnson', plan: 'Plus' };

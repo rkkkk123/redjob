@@ -13,6 +13,11 @@ const severityConfig = {
     bg: 'var(--semantic-amber-bg)',
     label: 'Yellow Flag'
   },
+  yellow: {
+    color: 'var(--semantic-amber)',
+    bg: 'var(--semantic-amber-bg)',
+    label: 'Yellow Flag'
+  },
   green: {
     color: 'var(--semantic-green)',
     bg: 'var(--semantic-green-bg)',
@@ -20,8 +25,9 @@ const severityConfig = {
   }
 };
 
-const FlagCard = ({ severity = 'red', quote, reason, question, index = 0 }) => {
-  const config = severityConfig[severity];
+const FlagCard = ({ severity = 'red', quote = '', reason = '', question = '', index = 0 }) => {
+  const normSeverity = String(severity || 'amber').toLowerCase().trim();
+  const config = severityConfig[normSeverity] || severityConfig.amber;
   
   // Calculate stagger class (max 4 to loop if many cards)
   const staggerClass = `animate-stagger-${(index % 4) + 1}`;

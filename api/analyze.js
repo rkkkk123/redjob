@@ -112,9 +112,46 @@ function runHeuristicAudit(jobDescription, resumeText) {
   };
 }
 
+// In-memory cache for API performance optimization
+const auditCache = new Map();
+const MAX_CACHE_SIZE = 100;
+
+function createHashKey(str) {
+  let hash = 0;
+  if (!str || str.length === 0) return '0';
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
+
+function normalizeAuditResult(rawResult, fallbackText = '') {
+  const heuristic = runHeuristicAudit(fallbackText, null);
+  if (!rawResult || typeof rawResult !== 'object') return heuristic;
+
+  return {
+    roleTitle: rawResult.roleTitle || heuristic.roleTitle,
+    companyName: rawResult.companyName || heuristic.companyName,
+    score: typeof rawResult.score === 'number' ? Math.max(10, Math.min(99, rawResult.score)) : heuristic.score,
+    summary: rawResult.summary || heuristic.summary,
+    flags: Array.isArray(rawResult.flags) && rawResult.flags.length > 0 ? rawResult.flags : heuristic.flags,
+    signals: Array.isArray(rawResult.signals) && rawResult.signals.length > 0 ? rawResult.signals : heuristic.signals,
+    hiringMetrics: rawResult.hiringMetrics || heuristic.hiringMetrics,
+    compensationComparison: rawResult.compensationComparison || heuristic.compensationComparison,
+    futureProofIndex: rawResult.futureProofIndex || heuristic.futureProofIndex,
+    resumeFit: rawResult.resumeFit || heuristic.resumeFit,
+    salaryInsights: rawResult.salaryInsights || heuristic.salaryInsights,
+    interviewStrategy: Array.isArray(rawResult.interviewStrategy) && rawResult.interviewStrategy.length > 0
+      ? rawResult.interviewStrategy
+      : heuristic.interviewStrategy
+  };
+}
+
 export default async function handler(req, res) {
   // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -135,13 +172,20 @@ export default async function handler(req, res) {
     body = body || {};
 
     const { jobDescription = '', image = null, resumeText = null } = body;
+    const cacheKey = createHashKey(`${jobDescription}_${resumeText || ''}_${image ? image.slice(0, 100) : ''}`);
+
+    // Check In-Memory Cache for ultra-fast performance
+    if (auditCache.has(cacheKey)) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json(auditCache.get(cacheKey));
+    }
 
     const systemPrompt = `You are an executive corporate culture auditor. Analyze the job description and return JSON format with roleTitle, companyName, score, summary, flags, signals, hiringMetrics, compensationComparison, futureProofIndex, resumeFit, salaryInsights, interviewStrategy.`;
     const userPrompt = `Job Description:\n${jobDescription}\nResume:\n${resumeText || ''}`;
 
     let aiResult = null;
 
-    // Strategy 1: Gemini
+    // Strategy 1: Gemini API
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey && geminiKey.trim().length > 3) {
       try {
@@ -151,7 +195,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Strategy 2: NVIDIA NIM
+    // Strategy 2: NVIDIA NIM API
     const nvidiaKey = process.env.NVIDIA_NIM_API_KEY;
     if (!aiResult && nvidiaKey && nvidiaKey.trim().length > 5) {
       try {
@@ -166,10 +210,20 @@ export default async function handler(req, res) {
       aiResult = runHeuristicAudit(jobDescription, resumeText);
     }
 
-    return res.status(200).json(aiResult);
+    const normalized = normalizeAuditResult(aiResult, jobDescription);
+
+    // Save to Cache
+    if (auditCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = auditCache.keys().next().value;
+      auditCache.delete(firstKey);
+    }
+    auditCache.set(cacheKey, normalized);
+
+    res.setHeader('X-Cache', 'MISS');
+    return res.status(200).json(normalized);
   } catch (err) {
     console.error('Unhandled Vercel function error:', err);
-    const fallback = runHeuristicAudit('Job Analysis', null);
+    const fallback = normalizeAuditResult(null, 'Job Analysis');
     return res.status(200).json(fallback);
   }
 }

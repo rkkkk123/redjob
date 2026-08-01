@@ -6,28 +6,40 @@ import {
 import { TrendingUp, ShieldAlert, Cpu, Award, Users, Clock } from 'lucide-react';
 import './ResultsView.css';
 
+const parseNum = (val, fallback = 0) => {
+  if (typeof val === 'number' && !isNaN(val)) return val;
+  if (typeof val === 'string') {
+    const cleaned = val.replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? fallback : num;
+  }
+  return fallback;
+};
+
 const VisualAnalyticsView = ({ compensation, futureProof, hiringMetrics }) => {
-  // Default values if metric object missing
-  const compData = compensation || {
-    roleBase: 118000,
-    marketAvg: 105000,
-    topPercentile: 145000,
-    entryLevel: 75000,
-    currency: "$"
+  // Default values if metric object missing or malformed
+  const compData = {
+    roleBase: parseNum(compensation?.roleBase, 118000),
+    marketAvg: parseNum(compensation?.marketAvg, 105000),
+    topPercentile: parseNum(compensation?.topPercentile, 145000),
+    entryLevel: parseNum(compensation?.entryLevel, 75000),
+    currency: compensation?.currency || "$"
   };
 
-  const fpData = futureProof || {
-    longevityScore: 85,
-    aiAutomationRisk: 22,
-    growthTrajectory: "+16% Projected 5-Year Industry Growth",
-    futureSkillsToLearn: ["System Architecture", "AI Integration & Workflows", "Cross-Functional Leadership"]
+  const fpData = {
+    longevityScore: parseNum(futureProof?.longevityScore, 85),
+    aiAutomationRisk: parseNum(futureProof?.aiAutomationRisk, 22),
+    growthTrajectory: futureProof?.growthTrajectory || "+16% Projected 5-Year Industry Growth",
+    futureSkillsToLearn: Array.isArray(futureProof?.futureSkillsToLearn) && futureProof.futureSkillsToLearn.length > 0
+      ? futureProof.futureSkillsToLearn
+      : ["System Architecture", "AI Integration & Workflows", "Cross-Functional Leadership"]
   };
 
-  const hmData = hiringMetrics || {
-    applicantCompetition: "High (180+ applicants / posting)",
-    hiringVelocityDays: 24,
-    competitionIndex: 78,
-    demandScore: 88
+  const hmData = {
+    applicantCompetition: hiringMetrics?.applicantCompetition || "High (180+ applicants / posting)",
+    hiringVelocityDays: parseNum(hiringMetrics?.hiringVelocityDays, 24),
+    competitionIndex: parseNum(hiringMetrics?.competitionIndex, 78),
+    demandScore: parseNum(hiringMetrics?.demandScore, 88)
   };
 
   // Format chart data for Compensation Bar Chart
@@ -39,15 +51,17 @@ const VisualAnalyticsView = ({ compensation, futureProof, hiringMetrics }) => {
   ];
 
   // Calculate percentage vs market average
-  const diffFromAvg = Math.round(((compData.roleBase - compData.marketAvg) / compData.marketAvg) * 100);
+  const diffFromAvg = compData.marketAvg > 0
+    ? Math.round(((compData.roleBase - compData.marketAvg) / compData.marketAvg) * 100)
+    : 0;
 
   // Format Radar data for Market Velocity & Longevity
   const radarData = [
-    { subject: 'Market Demand', score: hmData.demandScore || 85 },
-    { subject: '5-Yr Stability', score: fpData.longevityScore || 80 },
-    { subject: 'AI Immunity', score: Math.max(10, 100 - (fpData.aiAutomationRisk || 20)) },
-    { subject: 'Offer Velocity', score: Math.max(20, 100 - (hmData.hiringVelocityDays * 2)) },
-    { subject: 'Comp Tier', score: Math.min(95, Math.round((compData.roleBase / compData.topPercentile) * 100)) }
+    { subject: 'Market Demand', score: hmData.demandScore },
+    { subject: '5-Yr Stability', score: fpData.longevityScore },
+    { subject: 'AI Immunity', score: Math.max(10, Math.min(100, 100 - fpData.aiAutomationRisk)) },
+    { subject: 'Offer Velocity', score: Math.max(20, Math.min(100, 100 - (hmData.hiringVelocityDays * 2))) },
+    { subject: 'Comp Tier', score: compData.topPercentile > 0 ? Math.min(95, Math.round((compData.roleBase / compData.topPercentile) * 100)) : 75 }
   ];
 
   return (
